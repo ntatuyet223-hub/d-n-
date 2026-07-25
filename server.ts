@@ -11,6 +11,9 @@ const PORT = 3000;
 
 app.use(express.json());
 
+// Memory store for ride bookings
+const bookingsStore: any[] = [];
+
 // Initialize Gemini API client safely
 const getGeminiAI = () => {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -29,150 +32,127 @@ const getGeminiAI = () => {
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ status: "ok", service: "Đinh Văn Hiến Driving Service", timestamp: new Date().toISOString() });
 });
 
-// AI Stylist Endpoint - Fashion advice & outfit builder
-app.post("/api/gemini/stylist", async (req, res) => {
+// AI CSKH & Consultation Chat Endpoint
+app.post("/api/gemini/chat", async (req, res) => {
   try {
-    const { userPrompt, eventType, bodyShape, colorPreference } = req.body;
+    const { message, chatHistory } = req.body;
     const ai = getGeminiAI();
 
-    if (!ai) {
-      return res.status(503).json({
-        error: "Dịch vụ AI chưa được cấu hình GEMINI_API_KEY.",
-        fallbackAdvice: "Nên phối đầm lụa midi dáng xòe nhẹ kết hợp áo blazer khoác hờ cùng phụ kiện ánh kim cho dịp tiệc tùng sang trọng.",
-      });
-    }
-
-    const prompt = `Bạn là Chuyên gia Stylist & Cố vấn Thời trang Nữ Cao Cấp của thương hiệu "AURA - Modern Elegance".
-Khách hàng cần tư vấn outfit:
-- Yêu cầu/Dịp: ${userPrompt || eventType || "Trang phục hàng ngày thanh lịch"}
-- Dáng người: ${bodyShape || "Cân đối"}
-- Màu sắc yêu thích: ${colorPreference || "Nhã nhặn, sang trọng (Beige, Cream, Pastel, Black, Rose)"}
-
-Hãy đưa ra lời khuyên thời trang thực tế, tinh tế bằng tiếng Việt (ngắn gọn, khoảng 180-250 từ) gồm:
-1. Gợi ý tổng thể Outfit (Áo/Đầm + Quần/Chân váy + Áo khoác + Phụ kiện).
-2. Lợi ích tôn dáng & chất liệu gợi ý (Lụa Satin, Tweed, Linen Pháp, Organza).
-3. Mẹo phối màu & chọn giày/túi phù hợp.
-Xưng hô là "Stylist AURA" thân thiện, lịch sự và truyền cảm hứng.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: prompt,
-    });
-
-    res.json({ advice: response.text });
-  } catch (err: any) {
-    console.error("Error in AI Stylist route:", err);
-    res.status(500).json({ error: "Không thể lấy gợi ý từ AI Stylist.", details: err.message });
-  }
-});
-
-// AI Smart Cart Advisor Endpoint - Mix & Match & Upsell Suggestions
-app.post("/api/gemini/smart-cart-recommend", async (req, res) => {
-  try {
-    const { cartItems } = req.body;
-    const ai = getGeminiAI();
+    const fallbackResponse = "Dịch vụ Lái xe Đinh Văn Hiến xin kính chào Quý khách! Anh Hiến chuyên phục vụ: Lái xe hộ người say/mệt mỏi, Đưa đón sân bay Nội Bài/TSN (chỉ từ 250k), Cho thuê xe 4-7 chỗ và Xe đi tỉnh. Hotline/Zalo trực tiếp: 0988.123.456. Quý khách muốn đặt lịch chuyến nào ạ?";
 
     if (!ai) {
-      return res.json({
-        cartAnalysis: "Bộ trang phục trong giỏ hàng có tông màu thanh lịch, rất dễ kết hợp phụ kiện lụa hoặc trang sức ngọc trai.",
-        suggestedItems: ["Bông Tai Ngọc Trai AURA", "Khăn Lụa Tơ Tằm Rose Gold"],
-      });
+      return res.json({ reply: fallbackResponse });
     }
 
-    const itemsList = Array.isArray(cartItems)
-      ? cartItems.map((i: any) => `${i.name} (Loại: ${i.category}, Màu: ${i.selectedColor}, Size: ${i.selectedSize})`).join(", ")
-      : "Giỏ hàng hiện chưa có sản phẩm";
-
-    const prompt = `Bạn là hệ thống Giỏ Hàng Thông Minh (Smart Fashion Cart Advisor) của AURA Women Fashion.
-Danh sách sản phẩm hiện tại trong giỏ hàng:
-[ ${itemsList} ]
+    const systemContext = `Bạn là Trợ Lý AI Chăm Sóc Khách Hàng 24/7 của "Dịch Vụ Lái Xe & Xe Đưa Đón - Đinh Văn Hiến".
+Thông tin chính về dịch vụ:
+- Chủ xe/Tài xế chính: Đinh Văn Hiến (10+ năm kinh nghiệm lái xe an toàn, điềm đạm, không hút thuốc, thuộc đường xá miền Bắc và cả nước).
+- Hotline / Zalo: 0988.123.456.
+- Dịch vụ chính:
+  1. Lái Xe Hộ (lái chính xe của khách khi say/mệt): Nội thành từ 150k - 250k/lượt, đêm từ 22h hỗ trợ nhiệt tình.
+  2. Đưa Đón Sân Bay Nội Bài: Hà Nội ↔ Nội Bài trọn gói từ 230k - 300k (xe 4-7 chỗ đời mới).
+  3. Xe Đi Tỉnh & Hợp Đồng: 9.000đ - 11.000đ/km (giảm 50% lượt về nếu đi 2 chiều trong ngày).
+  4. Thuê xe 4 chỗ, 7 chỗ có tài xế riêng theo ngày/theo giờ.
+- Cam kết: Đúng giờ 100%, xe sạch sẽ không mùi, tài xế văn minh, trả đồ tận tay nếu khách bỏ quên.
 
 Nhiệm vụ của bạn:
-1. Đánh giá phong cách tổng thể của các món đồ trong giỏ (ví dụ: Công sở hiện đại, Dự tiệc tối sang trọng, Mùa hè lãng mạn...).
-2. Phân tích thành phần phối đồ (Ví dụ: Khách đã chọn đầm nhưng chưa có áo khoác/phụ kiện đi kèm).
-3. Đưa ra 1 nhận xét ngắn gọn (tối đa 3 câu) bằng tiếng Việt thật tinh tế khen ngợi gu thời trang và gợi ý món đồ kết hợp hoàn hảo tiếp theo.
+- Trả lời thân thiện, lịch sự, chu đáo, báo giá tham khảo nhanh chóng.
+- Luôn khuyến khích khách đặt lịch qua biểu mẫu hoặc gọi trực tiếp Hotline 0988.123.456 để anh Hiến xếp lịch nhanh nhất.
+- Trả lời bằng tiếng Việt, ngắn gọn (dưới 120 từ), định dạng rõ ràng.`;
 
-Hãy trả về dưới dạng JSON hợp lệ đúng định dạng:
-{
-  "cartAnalysis": "phần phân tích phối đồ ngắn gọn",
-  "styleTheme": "tên phong cách chính",
-  "stylistTip": "1 mẹo diện đồ độc đáo cho combo này"
-}`;
+    const prompt = `${systemContext}\n\nKhách hỏi: "${message || "Cho tôi biết thêm thông tin về giá cước"}"`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3.6-flash",
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-      },
     });
 
-    const parsed = JSON.parse(response.text || "{}");
-    res.json(parsed);
+    res.json({ reply: response.text || fallbackResponse });
   } catch (err: any) {
-    console.error("Error in Smart Cart route:", err);
-    res.status(500).json({ error: "Lỗi phân tích giỏ hàng thông minh." });
+    console.error("Error in AI Chat route:", err);
+    res.json({
+      reply: "Chào bạn, hệ thống AI đang hỗ trợ tốt nhất qua Hotline/Zalo: 0988.123.456. Anh Hiến sẵn sàng nghe máy và xếp xe cho bạn ngay lập tức!",
+    });
   }
 });
 
-// AI Size Advisor Endpoint
-app.post("/api/gemini/size-advisor", async (req, res) => {
+// AI Fare Estimator Endpoint
+app.post("/api/gemini/fare-estimate", async (req, res) => {
   try {
-    const { height, weight, bust, waist, hip, fitPreference, productName, category } = req.body;
-    const ai = getGeminiAI();
+    const { pickup, dropoff, serviceType, distanceKm, isRoundTrip, isNightTime } = req.body;
 
-    if (!ai) {
-      // Basic rule fallback
-      let recommendedSize = "M";
-      if (weight < 48) recommendedSize = "S";
-      else if (weight > 58) recommendedSize = "L";
+    let baseRatePerKm = 10000;
+    let baseMinFare = 150000;
 
-      return res.json({
-        recommendedSize,
-        confidence: "92%",
-        advice: `Dựa trên chiều cao ${height}cm và cân nặng ${weight}kg, size ${recommendedSize} sẽ mang lại phom dáng ${fitPreference || "vừa vặn, thoải mái"}.`,
-      });
+    if (serviceType === 'lai_xe_ho') {
+      baseMinFare = 180000;
+      baseRatePerKm = 12000;
+    } else if (serviceType === 'dua_don_san_bay') {
+      baseMinFare = 250000;
+      baseRatePerKm = 8500;
+    } else if (serviceType === 'thue_xe_7cho') {
+      baseMinFare = 250000;
+      baseRatePerKm = 12000;
+    } else if (serviceType === 'xe_di_tinh') {
+      baseMinFare = 300000;
+      baseRatePerKm = 9500;
     }
 
-    const prompt = `Bạn là Chuyên gia Tư vấn Size & Phom dáng Thời trang Nữ AURA.
-Thông số khách hàng:
-- Chiều cao: ${height} cm
-- Cân nặng: ${weight} kg
-- Số đo 3 vòng: Vòng 1 (${bust || "chưa nhập"} cm), Vòng 2 (${waist || "chưa nhập"} cm), Vòng 3 (${hip || "chưa nhập"} cm)
-- Sở thích mặc: ${fitPreference || "Thoải mái chuẩn phom"}
-- Sản phẩm đang xem: ${productName || "Đầm/Áo thiết kế AURA"} (Danh mục: ${category || "Thời trang nữ"})
+    const distance = Math.max(1, Number(distanceKm) || 15);
+    let total = Math.max(baseMinFare, Math.round(distance * baseRatePerKm));
 
-Bảng size tham khảo chuẩn AURA:
-- XS: < 45kg | 1m50 - 1m58 | Ngực < 82, Eo < 64, Mông < 88
-- S: 45-51kg | 1m53 - 1m62 | Ngực 82-86, Eo 64-68, Mông 88-92
-- M: 52-57kg | 1m55 - 1m65 | Ngực 86-90, Eo 68-72, Mông 92-96
-- L: 58-63kg | 1m58 - 1m70 | Ngực 90-95, Eo 72-77, Mông 96-101
-- XL: > 63kg | > 1m60 | Ngực > 95, Eo > 77, Mông > 101
+    if (isRoundTrip) {
+      total = Math.round(total * 1.5); // 50% discount on return
+    }
 
-Hãy tính toán và trả về JSON:
-{
-  "recommendedSize": "S" | "M" | "L" | "XL" | "XS",
-  "confidenceScore": "96%",
-  "fitNotes": "lời giải thích ngắn gọn về phom dáng, độ co giãn chất liệu và lưu ý giặt giữ"
-}`;
+    if (isNightTime) {
+      total += 40000; // Night surcharge
+    }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-      },
+    const roundedPrice = Math.ceil(total / 10000) * 10000;
+
+    res.json({
+      success: true,
+      serviceType,
+      pickup,
+      dropoff,
+      distanceKm: distance,
+      estimatedPrice: roundedPrice,
+      formattedPrice: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(roundedPrice),
+      note: isRoundTrip ? 'Đã áp dụng giảm 50% lượt về trong ngày.' : 'Chưa bao gồm vé cầu đường (nếu có).'
     });
-
-    const parsed = JSON.parse(response.text || "{}");
-    res.json(parsed);
   } catch (err: any) {
-    console.error("Error in Size Advisor route:", err);
-    res.status(500).json({ error: "Không thể phân tích size." });
+    res.status(500).json({ error: "Lỗi tính cước." });
   }
+});
+
+// Handle Ride Booking
+app.post("/api/booking", (req, res) => {
+  try {
+    const booking = {
+      id: `DVH-${Math.floor(1000 + Math.random() * 9000)}`,
+      ...req.body,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    bookingsStore.push(booking);
+
+    res.json({
+      success: true,
+      booking,
+      message: "Đặt chuyến thành công! Tài xế Đinh Văn Hiến sẽ gọi điện xác nhận trong 3-5 phút.",
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: "Không thể gửi yêu cầu đặt xe." });
+  }
+});
+
+// Get recent bookings (for admin or demo)
+app.get("/api/bookings", (req, res) => {
+  res.json({ bookings: bookingsStore });
 });
 
 // Setup Vite development server or serve build static files in production

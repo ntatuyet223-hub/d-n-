@@ -1,102 +1,80 @@
-export type CategoryId = 'all' | 'dresses' | 'tops' | 'bottoms' | 'outerwear' | 'loungewear' | 'accessories';
+export type ServiceType = 
+  | 'lai_xe_ho'      // Lái xe hộ người say / mệt mỏi
+  | 'dua_don_san_bay' // Đưa đón sân bay Nội Bài / TSN / Cát Bi
+  | 'thue_xe_4cho'   // Xe 4 chỗ đời mới
+  | 'thue_xe_7cho'   // Xe 7 chỗ sang trọng
+  | 'xe_di_tinh'     // Xe đi tỉnh theo chuyến / đường dài
+  | 'lai_xe_hop_dong';// Lái xe hợp đồng ngày / tháng
 
-export interface ColorOption {
-  name: string;
-  code: string;
-}
-
-export type ProductSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'Freesize';
-
-export interface Product {
-  id: string;
-  name: string;
-  sku: string;
-  price: number; // In VND (e.g., 650000)
-  originalPrice?: number; // In VND (e.g., 850000)
-  category: CategoryId;
-  categoryName: string;
+export interface ServiceItem {
+  id: ServiceType;
+  title: string;
+  tagline: string;
   description: string;
-  material: string; // E.g., Lụa Satin Cao Cấp, Linen Pháp, Tweed Dạ
-  images: string[];
-  colors: ColorOption[];
-  sizes: ProductSize[];
-  isNew?: boolean;
-  isBestSeller?: boolean;
-  rating: number; // 4.8
-  reviewCount: number; // 42
-  tags: string[]; // e.g. ["Công Sở", "Dự Tiệc", "Tôn Dáng"]
-  matchingProductIds?: string[]; // Recommended cross-sell items for smart cart
+  badge: string;
+  basePriceText: string;
+  features: string[];
+  iconName: string;
+  image: string;
 }
 
-export interface CartItem {
-  cartItemId: string;
-  product: Product;
-  selectedColor: ColorOption;
-  selectedSize: ProductSize;
-  quantity: number;
-  addedAt: number;
+export interface FareCalculation {
+  serviceType: ServiceType;
+  pickupLocation: string;
+  dropoffLocation: string;
+  distanceKm: number;
+  isRoundTrip: boolean;
+  isNightTime: boolean; // 22:00 - 05:00
+  estimatedPrice: number;
+  discountAmount: number;
+  finalPrice: number;
+  detailsText: string;
 }
 
-export interface Voucher {
-  code: string;
-  discountType: 'percentage' | 'fixed';
-  discountValue: number; // e.g. 10 for 10% or 100000 for 100k
-  minOrderValue: number;
-  description: string;
-  expiryDate: string;
-}
-
-export interface BodyMetrics {
-  height: number; // cm
-  weight: number; // kg
-  bust?: number; // cm
-  waist?: number; // cm
-  hip?: number; // cm
-  fitPreference: 'Ôm body' | 'Vừa vặn' | 'Rộng thoải mái';
-}
-
-export interface SizeAdvisorResult {
-  recommendedSize: ProductSize;
-  confidenceScore: string;
-  fitNotes: string;
-}
-
-export interface ShippingAddress {
+export interface BookingData {
+  id?: string;
   fullName: string;
   phone: string;
-  email: string;
-  province: string;
-  district: string;
-  ward: string;
-  detailAddress: string;
+  serviceType: ServiceType;
+  vehiclePreference?: string;
+  pickupLocation: string;
+  dropoffLocation: string;
+  pickupDate: string;
+  pickupTime: string;
+  estimatedDistanceKm?: number;
   note?: string;
+  status?: 'pending' | 'confirmed' | 'completed';
+  createdAt?: string;
+  estimatedPrice?: number;
 }
 
-export interface Order {
-  orderId: string;
-  createdAt: string;
-  items: CartItem[];
-  shippingAddress: ShippingAddress;
-  paymentMethod: 'momo' | 'vnpay' | 'cod' | 'bank_transfer';
-  shippingFee: number;
-  subtotal: number;
-  discountAmount: number;
-  voucherCode?: string;
-  totalAmount: number;
-  status: 'pending' | 'processing' | 'shipping' | 'delivered';
-  estimatedDelivery: string;
-}
-
-export interface Review {
+export interface ReviewItem {
   id: string;
   customerName: string;
+  customerRole?: string;
+  serviceUsed: string;
   rating: number;
-  date: string;
   comment: string;
-  verifiedPurchase: boolean;
-  productName: string;
-  purchasedSize: ProductSize;
-  purchasedColor: string;
-  userHeightWeight?: string;
-  likes: number;
+  date: string;
+  avatarUrl?: string;
+  verified: boolean;
+  routeText?: string;
+}
+
+export interface RouteHighlight {
+  id: string;
+  fromTo: string;
+  estimatedTime: string;
+  priceFrom: string;
+  vehicleType: string;
+  highlights: string[];
+  popularCount: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'driver' | 'system';
+  text: string;
+  timestamp: string;
+  quickActions?: { label: string; actionText: string }[];
 }

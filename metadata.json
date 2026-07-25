@@ -1,6 +1,6 @@
 {
-  "name": "AURA - Thời Trang Nữ & Giỏ Hàng Thông Minh",
-  "description": "Trang web thời trang nữ cao cấp tích hợp giỏ hàng thông minh, tư vấn size AI và gợi ý phối đồ cá nhân hóa.",
+  "name": "Dịch Vụ Lái Xe & Xe Đưa Đón - Đinh Văn Hiến",
+  "description": "Trang web dịch vụ lái xe an toàn, đưa đón sân bay, lái xe hộ và cho thuê xe riêng của Đinh Văn Hiến.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
