@@ -1,0 +1,6 @@
+{
+  "name": "AURA - Thời Trang Nữ & Giỏ Hàng Thông Minh",
+  "description": "Trang web thời trang nữ cao cấp tích hợp giỏ hàng thông minh, tư vấn size AI và gợi ý phối đồ cá nhân hóa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
